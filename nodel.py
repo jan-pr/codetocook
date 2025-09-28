@@ -3,9 +3,13 @@ from pydantic import BaseModel
 import google.generativeai as genai
 import os
 import json
+import re
+from dotenv import load_dotenv
+load_dotenv()
+
 
 # Configure Gemini
-genai.configure(api_key=os.environ['GEMIN_API_KEY'])
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 app = FastAPI()
 
@@ -14,6 +18,7 @@ class IngredientsRequest(BaseModel):
 
 @app.post("/generate-recipe")
 async def generate_recipe(request: IngredientsRequest):
+
     prompt = f"""
     You are a recipe generator AI. The user will give ingredients.
 
@@ -31,13 +36,14 @@ async def generate_recipe(request: IngredientsRequest):
     }}
     """
 
-    model = genai.GenerativeModel("gemini-1.5-flash")
-    response = model.generate_content(prompt)
+    model = genai.GenerativeModel("models/gemini-2.5-flash")
 
-    # Try parsing into JSON
-    try:
-        recipe_json = json.loads(response.text)
-    except json.JSONDecodeError:
-        return {"error": "Invalid JSON response", "raw": response.text}
+    response = model.generate_content(
+        prompt,
+        generation_config={"response_mime_type": "application/json"}
+    )
+
+    recipe_json = json.loads(response.text)
+
 
     return recipe_json
